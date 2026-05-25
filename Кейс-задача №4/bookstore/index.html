@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Книжный магазин - Литературный мир</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Книжный магазин "Литературный мир"</h1>
+            <div class="auth-buttons">
+                <button onclick="switchUserMode('user')" class="active">👤 Пользователь</button>
+                <button onclick="switchUserMode('admin')">🔧 Администратор</button>
+            </div>
+        </header>
+
+        <!-- Интерфейс пользователя -->
+        <div id="user-interface" class="interface active">
+            <!-- Панель фильтрации -->
+            <div class="filters-panel">
+                <h3>🔍 Фильтрация и сортировка книг</h3>
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label>📚 Категория:</label>
+                        <select id="category-filter" onchange="applyFilters()">
+                            <option value="all">Все категории</option>
+                            <option value="Роман">Роман</option>
+                            <option value="Детектив">Детектив</option>
+                            <option value="Фантастика">Фантастика</option>
+                            <option value="Наука">Наука</option>
+                            <option value="Поэзия">Поэзия</option>
+                            <option value="Приключения">Приключения</option>
+                            <option value="Триллер">Триллер</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>✍️ Автор:</label>
+                        <select id="author-filter" onchange="applyFilters()">
+                            <option value="all">Все авторы</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>📅 Год издания:</label>
+                        <select id="year-sort" onchange="applyFilters()">
+                            <option value="none">Без сортировки</option>
+                            <option value="asc">По возрастанию (старые → новые)</option>
+                            <option value="desc">По убыванию (новые → старые)</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>💰 Цена:</label>
+                        <select id="price-sort" onchange="applyFilters()">
+                            <option value="none">Без сортировки</option>
+                            <option value="asc">По возрастанию (дешевые → дорогие)</option>
+                            <option value="desc">По убыванию (дорогие → дешевые)</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>🔍 Поиск:</label>
+                        <input type="text" id="search-input" placeholder="Название или автор..." oninput="applyFilters()">
+                    </div>
+
+                    <div class="filter-group">
+                        <label>⭐ Статус:</label>
+                        <select id="status-filter" onchange="applyFilters()">
+                            <option value="all">Все книги</option>
+                            <option value="available">Только доступные</option>
+                            <option value="rented">Арендованные</option>
+                            <option value="sold">Проданные</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="reset-filters" onclick="resetFilters()">🔄 Сбросить фильтры</button>
+            </div>
+
+            <!-- Статистика -->
+            <div class="stats-panel">
+                <div class="stat-card">
+                    <span class="stat-value" id="total-books">0</span>
+                    <span class="stat-label">Всего книг</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="available-books">0</span>
+                    <span class="stat-label">Доступно</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="shown-books">0</span>
+                    <span class="stat-label">Показано</span>
+                </div>
+            </div>
+
+            <!-- Список книг -->
+            <div id="books-list" class="books-grid"></div>
+
+            <!-- Пагинация -->
+            <div class="pagination" id="pagination"></div>
+
+            <!-- Корзина -->
+            <div id="cart" class="cart">
+                <div class="cart-header">
+                    <h3>🛒 Корзина покупок</h3>
+                    <span class="cart-count" id="cart-count">0</span>
+                </div>
+                <div id="cart-items" class="cart-items"></div>
+                <div class="cart-footer">
+                    <div class="cart-total" id="cart-total"></div>
+                    <div class="cart-actions">
+                        <button onclick="clearCart()" class="btn-secondary">Очистить корзину</button>
+                        <button onclick="checkout()" class="btn-primary">Оформить заказ</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Интерфейс администратора -->
+        <div id="admin-interface" class="interface">
+            <div class="admin-panel">
+                <h2>📊 Панель администратора</h2>
+                <div class="admin-actions">
+                    <button onclick="showAddBookForm()" class="btn-primary">➕ Добавить книгу</button>
+                    <button onclick="showRentalReminders()" class="btn-warning">📧 Отправить напоминания</button>
+                    <button onclick="exportData()" class="btn-info">💾 Экспорт данных</button>
+                    <button onclick="showRentalsList()" class="btn-info">📋 Список аренд</button>
+                </div>
+                <div id="admin-books-list" class="books-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для добавления/редактирования книги -->
+    <div id="book-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3 id="modal-title">Добавить книгу</h3>
+            <form id="book-form">
+                <input type="hidden" id="book-id">
+                <div class="form-group">
+                    <label>📖 Название книги:</label>
+                    <input type="text" id="book-title" required>
+                </div>
+                <div class="form-group">
+                    <label>✍️ Автор:</label>
+                    <input type="text" id="book-author" required>
+                </div>
+                <div class="form-group">
+                    <label>📚 Категория:</label>
+                    <select id="book-category" required>
+                        <option value="Роман">Роман</option>
+                        <option value="Детектив">Детектив</option>
+                        <option value="Фантастика">Фантастика</option>
+                        <option value="Наука">Наука</option>
+                        <option value="Поэзия">Поэзия</option>
+                        <option value="Приключения">Приключения</option>
+                        <option value="Триллер">Триллер</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>📅 Год написания:</label>
+                    <input type="number" id="book-year" required min="1000" max="2025">
+                </div>
+                <div class="form-group">
+                    <label>💰 Цена (₽):</label>
+                    <input type="number" id="book-price" required min="0">
+                </div>
+                <div class="form-group">
+                    <label>📦 Количество экземпляров:</label>
+                    <input type="number" id="book-stock" required min="0" value="1">
+                </div>
+                <div class="form-group">
+                    <label>✅ Доступность:</label>
+                    <select id="book-available">
+                        <option value="true">Доступна</option>
+                        <option value="false">Недоступна</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>📌 Статус:</label>
+                    <select id="book-status">
+                        <option value="В наличии">В наличии</option>
+                        <option value="Арендована">Арендована</option>
+                        <option value="Продана">Продана</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary">💾 Сохранить</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно аренды -->
+    <div id="rental-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeRentalModal()">&times;</span>
+            <h3>📖 Аренда книги</h3>
+            <div id="rental-book-info"></div>
+            <div class="form-group">
+                <label>Выберите срок аренды:</label>
+                <select id="rental-period">
+                    <option value="14">2 недели (30% от цены)</option>
+                    <option value="30">1 месяц (50% от цены)</option>
+                    <option value="90">3 месяца (120% от цены)</option>
+                </select>
+            </div>
+            <div class="rental-price-info" id="rental-price-info"></div>
+            <div class="modal-actions">
+                <button onclick="confirmRent()" class="btn-primary">Подтвердить аренду</button>
+                <button onclick="closeRentalModal()" class="btn-secondary">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
